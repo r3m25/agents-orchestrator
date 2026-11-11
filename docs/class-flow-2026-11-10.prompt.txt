@@ -1,0 +1,46 @@
+Use case: infographic-diagram. Create a high-resolution, very legible Spanish step-by-step CLASS EXECUTION FLOW for an existing Java Camunda worker. Wide landscape infographic, approximately 2400x1600 composition. White background, navy sans-serif typography, precise orthogonal arrows, generous spacing, numbered blue circles. Flat technical diagram with restrained blue/teal/amber accents, no decorative photos or robots. Render all class and method names EXACTLY, preserving spelling and capitalization. This is a diagram of actual implemented classes, not a conceptual agent pipeline.
+
+TITLE: "Flujo de clases · Tech Lead Worker"
+SUBTITLE: "Paso a paso: desde el job de Camunda hasta impactAnalysis"
+
+Top thin gray band, separate from numbered processing:
+"Al arrancar" → "AgentsOrchestratorApplication" → "PlanningConfiguration"
+Caption: "Spring construye e inyecta las dependencias". Dashed dependency connector to the main worker and service; make clear bootstrap is not repeated per job.
+
+Main diagram:
+Small external clients card "local-process.py / Postman" with caption "Clientes de la API" → main Step 1 card "Camunda" with small text "Job: tech-lead.plan-impact.v1".
+Step 1 → Step 2 "TechLeadJobWorker.plan()" with subtext "Recibe projectId, ticketKey y ticket".
+Step 2 → Step 3 "ImpactPlanningService.analyze()" with port badge "AnalyzeImpact".
+
+Below step 3, a large very clearly bounded service orchestration container labeled exactly:
+"ImpactPlanningService coordina los pasos 4 a 8"
+Inside it, show the FOLLOWING numbered steps as execution order, clearly coordinated by the service rather than suggesting each adapter directly invokes the next. Use a tidy grid with arrows labeled "siguiente paso" where helpful:
+4. "FileRunStore.load(runId)" with badge "RunStore". Subtext: "Buscar resultado guardado". A small decision "¿Ya existe?" has "Sí" shortcut arrow going directly to Step 9, labeled "Reutilizar resultado". "No" continues to Step 5. DO NOT show saved results invoking Codex again.
+5. Large context-building group "GitContextSource.load()" with badge "ContextSource". Inside, three small sequential subcards:
+   "GitRepositoryConfig.resolve()" → "ManagedGitWorkspace.prepare()" → "PlanningContext".
+   Captions: first "Proveedor, URL y rama base"; second "Clone · fetch · checkout · pull"; third "Ticket, archivos, SHA y bloqueos".
+   Small alternate-mode callout branching as a choice, not a sequential step: "Offline: ExistingCloneWorkspace".
+   Small support tag "Git usa BoundedProcess".
+6. "CodexPlanningEngine.plan()" with badge "PlanningEngine". Inside or directly underneath: "BoundedProcess → Codex CLI → JSON". Caption: "Análisis y tareas propuestas".
+7. "JsonPlanContract.validate()" with badge "PlanContract". Caption: "Schema · citas · repositorios · dependencias sin ciclos".
+8. "FileRunStore.save()" with badge "RunStore". Caption: "Guardar resultado antes de completar el job". Small path caption ".runtime/runs/{runId}.json".
+
+After Step 8, exit orchestration container to Step 9, which is a clear successful return:
+"TechLeadJobWorker → CompleteJobCommand" → "Camunda: impactAnalysis"
+Caption: "PLANNED o BLOCKED, con decisiones y evidencias".
+Step 9 must also receive the cached-result shortcut from Step 4.
+A small red outlined side callout, linked to the service/worker only, labeled:
+"Si hay una excepción"
+"TechLeadJobWorker → FailJobCommand"
+"Reintento o incidente"
+Do not route failures into successful completion.
+
+At the bottom, a separate lavender strip, not part of numbered steps 1–9, labeled:
+"Operación independiente: preparar una rama"
+Inside: "PrepareWorkBranchCommand" → "PrepareWorkBranch" → "ManagedGitWorkspace.prepareWorkBranch()"
+Caption: "Crea o reutiliza rama remota y prepara checkout local".
+Small note: "No se activa automáticamente desde el flujo de planificación".
+
+Bottom legend:
+"Badge = interfaz / puerto · Caja = clase concreta · Flecha = orden o llamada".
+Keep English identifiers exact and explanatory text Spanish. No invented classes, no REST controller or Python backend, no QA or autonomous development depicted as implemented. All nine numbered steps must appear once and be easy to follow. Prioritize technical accuracy and readability over visual ornament.

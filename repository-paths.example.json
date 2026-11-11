@@ -1,0 +1,6 @@
+{
+  "example-project": {
+    "example-api": "/absolute/path/to/example-api",
+    "example-web": "/absolute/path/to/example-web"
+  }
+}

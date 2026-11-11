@@ -1,0 +1,7 @@
+.runtime/
+build/
+camunda/worker.env
+camunda/codex/
+.idea/
+.DS_Store
+__pycache__/

@@ -1,0 +1,7 @@
+{
+  "kivnes": {
+    "spring-boot-starter-backend": "/absolute/path/to/spring-boot-starter-backend",
+    "crossfit-app-web": "/absolute/path/to/crossfit-app-web",
+    "crossfit-app-mobile": "/absolute/path/to/crossfit-app-mobile"
+  }
+}

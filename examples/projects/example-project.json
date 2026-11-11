@@ -1,0 +1,27 @@
+{
+  "projectId": "example-project",
+  "ticketProvider": "jira",
+  "ticketKeyPattern": "^EXAMPLE-[0-9]+$",
+  "sourceControl": {
+    "provider": "bitbucket",
+    "workspace": "example-workspace"
+  },
+  "branchPattern": "feature/{ticketKey}/{slug}",
+  "repositories": {
+    "api": {
+      "repository": "example-api",
+      "baseBranch": "main",
+      "workflowStage": "backend",
+      "cloneUrl": "git@bitbucket.org:example-workspace/example-api.git"
+    },
+    "web": {
+      "repository": "example-web",
+      "baseBranch": "main",
+      "workflowStage": "web",
+      "sourceControl": {
+        "provider": "github"
+      },
+      "cloneUrl": "git@github.com:example-team/example-web.git"
+    }
+  }
+}

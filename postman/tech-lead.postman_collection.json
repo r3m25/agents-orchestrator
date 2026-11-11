@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "Tech Lead read-only MVP",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "camunda_base_url",
+      "value": "http://127.0.0.1:8088"
+    },
+    {
+      "key": "project_id",
+      "value": ""
+    },
+    {
+      "key": "ticket_key",
+      "value": ""
+    },
+    {
+      "key": "process_instance_key",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Analyze ticket and return decisions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{camunda_base_url}}/v2/process-instances",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"processDefinitionId\": \"implementar_feature_desde_tech_lead_agent_v1\",\n  \"variables\": {\n    \"projectId\": \"{{project_id}}\",\n    \"ticketKey\": \"{{ticket_key}}\"\n  },\n  \"awaitCompletion\": true,\n  \"requestTimeout\": 600000,\n  \"fetchVariables\": [\n    \"impactAnalysis\"\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Espera el an\u00e1lisis y devuelve variables.impactAnalysis. Las tareas son propuestas pendientes de aprobaci\u00f3n. HTTP 504 no cancela la instancia: no reintentar autom\u00e1ticamente. Configurar project_id y ticket_key para el proyecto solicitado."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.variables.get('project_id') || !pm.variables.get('ticket_key')) {",
+              "  pm.execution.skipRequest();",
+              "  throw new Error('Configurar project_id y ticket_key antes de iniciar el an\u00e1lisis.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Camunda returns completed planning', () => pm.response.to.have.status(200));",
+              "const instance = pm.response.json();",
+              "pm.collectionVariables.set('process_instance_key', instance.processInstanceKey);",
+              "const analysis = instance.variables && instance.variables.impactAnalysis;",
+              "pm.test('Response includes decisions about the requested ticket', () => {",
+              "  pm.expect(analysis).to.be.an('object');",
+              "  pm.expect(analysis.ticket).to.eql(pm.variables.get('ticket_key'));",
+              "  pm.expect(analysis.status).to.be.oneOf(['PLANNED', 'BLOCKED']);",
+              "  pm.expect(analysis.summary).to.be.a('string').and.not.empty;",
+              "  ['affectedComponents', 'tasks', 'decisions', 'blockers', 'requiredApprovals', 'acceptanceCriteria'].forEach(field => pm.expect(analysis[field], field).to.be.an('array'));",
+              "  pm.expect(analysis.recommendedNextAction).to.be.oneOf(['REQUEST_APPROVAL', 'REQUEST_INFORMATION']);",
+              "  pm.expect(analysis.readOnly).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inspect process",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{camunda_base_url}}/v2/process-instances/{{process_instance_key}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Camunda responds', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

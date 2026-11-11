@@ -1,0 +1,273 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ticket",
+    "status",
+    "summary",
+    "affectedComponents",
+    "facts",
+    "inferences",
+    "decisions",
+    "tasks",
+    "risks",
+    "blockers",
+    "requiredApprovals",
+    "acceptanceCriteria",
+    "recommendedNextAction",
+    "runId",
+    "readOnly",
+    "engine",
+    "repositories"
+  ],
+  "properties": {
+    "ticket": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PLANNED",
+        "BLOCKED"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "affectedComponents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "component",
+          "affected",
+          "reason",
+          "repositories",
+          "evidence"
+        ],
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "affected": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repository",
+                "revision",
+                "path",
+                "quote"
+              ],
+              "properties": {
+                "repository": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "quote": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "statement",
+          "evidence"
+        ],
+        "properties": {
+          "statement": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repository",
+                "revision",
+                "path",
+                "quote"
+              ],
+              "properties": {
+                "repository": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "quote": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "inferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "agent",
+          "description",
+          "dependencies"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agent": {
+            "type": "string",
+            "enum": [
+              "product-owner",
+              "architect",
+              "backend",
+              "web",
+              "mobile-flutter",
+              "mobile-ios",
+              "mobile-android",
+              "qa",
+              "devops"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requiredApprovals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendedNextAction": {
+      "type": "string",
+      "enum": [
+        "REQUEST_APPROVAL",
+        "REQUEST_INFORMATION"
+      ]
+    },
+    "runId": {
+      "type": "string"
+    },
+    "readOnly": {
+      "const": true
+    },
+    "engine": {
+      "type": "string"
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "component",
+          "repository",
+          "revision",
+          "inspectedFiles",
+          "inventoryCount",
+          "truncated"
+        ],
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "inspectedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inventoryCount": {
+            "type": "integer"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

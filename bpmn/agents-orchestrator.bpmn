@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_TechLeadImpact" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.52.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="implementar_feature_desde_tech_lead_agent_v1" name="Tech Lead — análisis de impacto (solo lectura)" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Jira" name="Recibir identificador de ticket">
+      <bpmn:outgoing>Flow_Start_ReadJira</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_ReadJira" name="Leer contexto del ticket">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="ticket.read" retries="2" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_ReadJira</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReadJira_Analyze</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_AnalyzeTicket" name="Tech Lead: inspeccionar y planificar">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="tech-lead.plan-impact.v1" retries="2" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ReadJira_Analyze</bpmn:incoming>
+      <bpmn:outgoing>Flow_Plan_Decision</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_PlanStatus" name="¿Plan completo?" default="Flow_Blocked">
+      <bpmn:incoming>Flow_Plan_Decision</bpmn:incoming>
+      <bpmn:outgoing>Flow_Planned</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Blocked</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Planned" name="Análisis verificable listo para revisión">
+      <bpmn:incoming>Flow_Planned</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Blocked" name="Análisis con bloqueos registrados">
+      <bpmn:incoming>Flow_Blocked</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_ReadJira" sourceRef="StartEvent_Jira" targetRef="Activity_ReadJira" />
+    <bpmn:sequenceFlow id="Flow_ReadJira_Analyze" sourceRef="Activity_ReadJira" targetRef="Activity_AnalyzeTicket" />
+    <bpmn:sequenceFlow id="Flow_Plan_Decision" sourceRef="Activity_AnalyzeTicket" targetRef="Gateway_PlanStatus" />
+    <bpmn:sequenceFlow id="Flow_Planned" sourceRef="Gateway_PlanStatus" targetRef="End_Planned">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= impactAnalysis.status = "PLANNED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Blocked" sourceRef="Gateway_PlanStatus" targetRef="End_Blocked" />
+    <bpmn:subProcess id="TimeoutSupervisor" name="Límite total de ejecución" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Timeout" name="15 minutos">
+        <bpmn:outgoing>Flow_Timeout_End</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration>PT15M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:endEvent id="End_Timeout" name="Tiempo agotado: revisar ejecución">
+        <bpmn:incoming>Flow_Timeout_End</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Timeout_End" sourceRef="Start_Timeout" targetRef="End_Timeout" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_TechLead">
+    <bpmndi:BPMNPlane id="Plane_TechLead" bpmnElement="implementar_feature_desde_tech_lead_agent_v1">
+      <bpmndi:BPMNShape id="StartEvent_Jira_di" bpmnElement="StartEvent_Jira">
+        <dc:Bounds x="170" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="151" y="158" width="75" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ReadJira_di" bpmnElement="Activity_ReadJira">
+        <dc:Bounds x="270" y="100" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AnalyzeTicket_di" bpmnElement="Activity_AnalyzeTicket">
+        <dc:Bounds x="470" y="100" width="170" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_PlanStatus_di" bpmnElement="Gateway_PlanStatus" isMarkerVisible="true">
+        <dc:Bounds x="710" y="115" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="748" y="171" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Planned_di" bpmnElement="End_Planned">
+        <dc:Bounds x="860" y="80" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="842" y="116" width="73" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Blocked_di" bpmnElement="End_Blocked">
+        <dc:Bounds x="860" y="210" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="849" y="246" width="59" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TimeoutSupervisor_di" bpmnElement="TimeoutSupervisor" isExpanded="true">
+        <dc:Bounds x="270" y="310" width="370" height="130" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Timeout_di" bpmnElement="Start_Timeout">
+        <dc:Bounds x="305" y="355" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="296" y="391" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Timeout_di" bpmnElement="End_Timeout">
+        <dc:Bounds x="560" y="355" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="537" y="391" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Timeout_End_di" bpmnElement="Flow_Timeout_End">
+        <di:waypoint x="341" y="373" />
+        <di:waypoint x="560" y="373" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Start_ReadJira_di" bpmnElement="Flow_Start_ReadJira">
+        <di:waypoint x="206" y="140" />
+        <di:waypoint x="270" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReadJira_Analyze_di" bpmnElement="Flow_ReadJira_Analyze">
+        <di:waypoint x="400" y="140" />
+        <di:waypoint x="470" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Plan_Decision_di" bpmnElement="Flow_Plan_Decision">
+        <di:waypoint x="640" y="140" />
+        <di:waypoint x="710" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Planned_di" bpmnElement="Flow_Planned">
+        <di:waypoint x="735" y="115" />
+        <di:waypoint x="735" y="98" />
+        <di:waypoint x="860" y="98" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Blocked_di" bpmnElement="Flow_Blocked">
+        <di:waypoint x="735" y="165" />
+        <di:waypoint x="735" y="228" />
+        <di:waypoint x="860" y="228" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

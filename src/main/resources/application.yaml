@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: agents-orchestrator
+  main:
+    web-application-type: none
+camunda:
+  client:
+    mode: self-managed
+    rest-address: ${CAMUNDA_REST_ADDRESS:http://127.0.0.1:8088}
+    grpc-address: ${CAMUNDA_GRPC_ADDRESS:http://127.0.0.1:26500}
+    prefer-rest-over-grpc: true
+    worker:
+      defaults:
+        max-jobs-active: 1
+        timeout: 600000
+        request-timeout: 15000
+logging:
+  structured:
+    format:
+      console: ecs

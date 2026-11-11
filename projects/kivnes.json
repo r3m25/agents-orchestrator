@@ -1,0 +1,15 @@
+{
+  "projectId": "kivnes",
+  "ticketProvider": "jira",
+  "ticketKeyPattern": "^KIVNES-[0-9]+$",
+  "sourceControl": {
+    "provider": "bitbucket",
+    "workspace": "box-crossfit-app"
+  },
+  "branchPattern": "feature/{ticketKey}/{slug}",
+  "repositories": {
+    "backend": { "repository": "spring-boot-starter-backend", "baseBranch": "main", "workflowStage": "backend" },
+    "frontend": { "repository": "crossfit-app-web", "baseBranch": "main", "workflowStage": "web" },
+    "mobile": { "repository": "crossfit-app-mobile", "baseBranch": "main", "workflowStage": "mobile" }
+  }
+}

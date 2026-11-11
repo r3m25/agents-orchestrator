@@ -1,0 +1,27 @@
+Use case: infographic-diagram.
+Create one polished, highly readable Spanish software architecture flow infographic for the actual current project "Orquestador autónomo de agentes". Landscape 3:2 composition, high resolution, flat vector-like visual style rendered as a bitmap, white background, navy typography, generous whitespace, tidy aligned rounded cards, clear thin directional arrows. All text in Spanish, clean sans-serif, correct accents, no logos, no decorative robots. Do not invent implemented functionality.
+Main title exactly: "Orquestador autónomo de agentes".
+Subtitle exactly: "Camunda supervisa · El Tech Lead decide".
+
+Organize in THREE clearly separated horizontal zones with concise labels and a visible status legend. Green solid borders mean implemented; blue solid borders mean implemented explicit operation; orange dashed borders mean pending automation. The diagram must communicate dynamic agent selection, never a fixed Backend→Web→Mobile sequence.
+
+ZONE 1, green header exactly "IMPLEMENTADO · PLANIFICACIÓN":
+A clear left-to-right main sequence:
+"Historia Jira + projectId" → "Camunda" (small caption "Estado · reintentos · límites") → "Tech Lead · Codex" (caption "Impacto · dependencias · agentes") → "Validar plan JSON" → "Respuesta con decisiones".
+The final response card contains two stacked compact states: "PLANNED · Listo para revisión" and "BLOCKED · Falta información".
+Below the Tech Lead card, show a small evidence input card "Commit y archivos verificados" feeding it, connected to the base-sync path of Zone 2. Jira ticket content feeds the Tech Lead as well, via the main sequence. No actual approval or development executes in this green zone.
+
+ZONE 2, blue header exactly "IMPLEMENTADO · REPOSITORIOS Y RAMAS":
+Left shared source card "Proveedor Git configurable" with small caption "Bitbucket · GitHub · GitLab · Otro Git".
+Two simple parallel paths from this source:
+Top path for planning: "Rama base" → "Clone / fetch" → "Checkout + pull" → "Commit verificado". This commit feeds the evidence card in Zone 1. Add a short caption "Sin publicar cambios".
+Bottom path for development preparation: "Crear o reutilizar rama remota" → "Obtener rama" → "Checkout + pull" → "Workspace local de desarrollo". Label this bottom path exactly "Operación explícita; aún no automática desde BPMN". Existing branches are reused, new branches originate from the synchronized base. No code editing in this zone.
+Keep arrows unambiguous; do not imply the planning path creates branches.
+
+ZONE 3, orange dashed header exactly "PENDIENTE · EJECUCIÓN AUTÓNOMA":
+Dashed left-to-right sequence "Aprobación humana" → "Preparar rama y workspace" → one larger card "Agentes necesarios" → "QA y correcciones" → "PR para revisión humana".
+Inside the single "Agentes necesarios" card show separate small selectable chips "Backend", "Web", "Mobile", "DevOps" with caption "Solo los requeridos por el ticket". These are options, not a sequential pipeline.
+A thin dashed feedback arrow from "QA y correcciones" returns to "Agentes necesarios", labelled "Corregir y validar".
+Dashed connection from the blue development workspace to this pending agent area communicates that workspace preparation is implemented but automatic delegation and approval are not yet connected.
+Bottom footnote exactly "Sin merge automático · Decisiones y evidencias trazables".
+Prioritize exact labels, legibility and factual status over decoration.
