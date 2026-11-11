@@ -1,6 +1,6 @@
 # Agents Orchestrator para Camunda
 
-Worker compartido entre proyectos, con identidad Java `dev.orchestrator.techlead` y grupo Gradle `dev.orchestrator`. El proyecto se recibe explícitamente en `projectId`; se carga su perfil, patrón de tickets, repositorios y mapa de clones. El prompt de Codex recibe ese identificador dentro del contexto, sin una marca de proyecto fija. KIVNES es un caso configurado y una evidencia histórica de validación.
+Worker compartido entre proyectos, con identidad Java `com.agents.orchestrator` y grupo Gradle `com.agents`. El proyecto se recibe explícitamente en `projectId`; se carga su perfil, patrón de tickets, repositorios y mapa de clones. El prompt de Codex recibe ese identificador dentro del contexto, sin una marca de proyecto fija. KIVNES es un caso configurado y una evidencia histórica de validación.
 
 Implementación ejecutable de **solo lectura y planificación**. Lee una historia Jira, sincroniza repositorios Git del proveedor configurado e inspecciona commits locales, llama a Codex CLI y devuelve un análisis con evidencias y un plan dinámico. El proceso de planificación no desarrolla, crea ramas, abre PRs ni ejecuta QA. La preparación explícita de una rama para desarrollo se describe más abajo.
 
@@ -34,7 +34,7 @@ Camunda persiste el estado, los resultados y los incidentes, y supervisa reinten
 
 Java implementa el caso de uso `AnalyzeImpact` mediante puertos sin Spring en `application/`. Spring configura los adapters. `PlanningEngine` permite cambiar Codex por otro motor sin modificar el BPMN. El MVP ejecuta un solo worker y no ofrece endpoints HTTP propios.
 
-Se eligió un worker externo con el starter oficial **8.10.9**, Java **21** y Spring Boot **3.5.16**. Camunda 8.10 soporta AI Agent Sub-processes, pero no se necesita introducir un segundo runtime de razonamiento ni integrar Codex como proveedor de ese conector para este alcance. Los subprocesos ad hoc/MCP son una alternativa futura para herramientas dinámicas supervisadas por Camunda.
+Se eligió un worker externo con el starter oficial **8.10.9**, Java **21** y Spring Boot **4.1.2**. Camunda 8.10 soporta AI Agent Sub-processes, pero no se necesita introducir un segundo runtime de razonamiento ni integrar Codex como proveedor de ese conector para este alcance. Los subprocesos ad hoc/MCP son una alternativa futura para herramientas dinámicas supervisadas por Camunda.
 
 ## Contratos
 
@@ -70,8 +70,17 @@ Desde esta carpeta:
 export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew test bootJar
-python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
+
+Las pruebas unitarias viven en `src/test/java`; las pruebas de integración de Spring, en `src/integrationTest/java`. Ejecutarlas por separado o junto con formato:
+
+```sh
+./gradlew integrationTest
+./gradlew check
+./gradlew pitest
+```
+
+`check` ejecuta pruebas unitarias, integración y Spotless. PIT genera sus reportes XML y HTML bajo `build/reports/pitest/`.
 
 Se incluye Gradle Wrapper 9.3.1. La primera ejecución descarga Gradle y dependencias; requiere acceso a Internet.
 
@@ -120,11 +129,11 @@ docker compose up --build
 ```
 
 3. En el primer uso, autenticar Codex dentro del contenedor: `docker compose exec worker codex login`.
-4. El worker despliega automáticamente el BPMN empaquetado. Iniciar e inspeccionar una instancia con:
+4. El worker despliega automáticamente el BPMN empaquetado. Iniciar e inspeccionar una instancia con el cliente Java:
 
 ```sh
-python3 scripts/local-process.py start --project kivnes --ticket KIVNES-34
-python3 scripts/local-process.py inspect --instance CLAVE_DEVUELTA_POR_START
+./gradlew localProcess -PcommandArgs="start --project kivnes --ticket KIVNES-34"
+./gradlew localProcess -PcommandArgs="inspect --instance CLAVE_DEVUELTA_POR_START"
 ```
 
 La petición de inicio espera por defecto el análisis y devuelve las decisiones en `variables.impactAnalysis`:
@@ -146,13 +155,13 @@ Content-Type: application/json
 
 La respuesta HTTP 200 incluye `processInstanceKey` y `variables.impactAnalysis`, con resumen del ticket, componentes afectados, decisiones, tareas y agentes propuestos, dependencias, bloqueos y siguiente acción. El resultado representa planificación: las tareas no se ejecutan en este MVP. `BLOCKED` también devuelve el análisis para explicar qué impide continuar.
 
-El servidor espera hasta 600.000 ms (10 minutos); configurar el cliente HTTP con un timeout superior, por ejemplo 630.000 ms. Si la petición recibe HTTP 504, la instancia puede continuar ejecutándose: no iniciar otra automáticamente porque duplicaría análisis y consumo. Revisar Operate. Si el proceso termina por su temporizador sin `impactAnalysis`, el helper informa error en lugar de presentar una respuesta incompleta como éxito.
+El servidor espera hasta 600.000 ms (10 minutos); el cliente Java usa un timeout de 630.000 ms. Si la petición recibe HTTP 504, la instancia puede continuar ejecutándose: no iniciar otra automáticamente porque duplicaría análisis y consumo. Revisar Operate. Si el proceso termina por su temporizador sin `impactAnalysis`, el cliente informa error en lugar de presentar una respuesta incompleta como éxito.
 
-Para conservar el inicio inmediato y consultar después, usar `python3 scripts/local-process.py start --project kivnes --ticket KIVNES-34 --async`.
+Para conservar el inicio inmediato y consultar después, usar `./gradlew localProcess -PcommandArgs="start --project kivnes --ticket KIVNES-34 --async"`.
 
-En el helper, `start` exige `--project`: no existe un proyecto predeterminado. En Postman configurar `project_id` y `ticket_key` antes de enviar la petición; ambos están vacíos para impedir una selección implícita.
+En el cliente Java, `start` exige `--project`: no existe un proyecto predeterminado. En Postman configurar `project_id` y `ticket_key` antes de enviar la petición; ambos están vacíos para impedir una selección implícita.
 
-Los helpers solo aceptan un Camunda local. `inspect` puede no ver un resultado inmediatamente por la consistencia eventual; repetir después. No declarar éxito si falta `impactAnalysis`, el proceso tiene incidente o salió por timeout. La colección `postman/tech-lead.postman_collection.json` espera las decisiones y valida el contenido de `impactAnalysis`, además de permitir inspeccionar el mismo proceso; iniciar una ejecución hace una llamada real a Codex y puede consumir cuota.
+El cliente Java solo acepta un Camunda local. `inspect` puede no ver un resultado inmediatamente por la consistencia eventual; repetir después. No declarar éxito si falta `impactAnalysis`, el proceso tiene incidente o salió por timeout. La colección `postman/tech-lead.postman_collection.json` espera las decisiones y valida el contenido de `impactAnalysis`, además de permitir inspeccionar el mismo proceso; iniciar una ejecución hace una llamada real a Codex y puede consumir cuota.
 
 ## Lectura de repositorios y seguridad
 
@@ -202,7 +211,7 @@ Para validar offline un resultado guardado contra el contrato final (sin llamar 
 ./gradlew validateImpact -PresultFile=.runtime/runs/CLAVE_DEL_JOB.json
 ```
 
-Archivos entregados: Compose y configuración Camunda en `docker-compose.yml` y `camunda/`; BPMN en `bpmn/`; perfil en `projects/`; worker, puertos y adapters en `src/main/java`; schemas en `src/main/resources`; pruebas, Gradle Wrapper, helpers, colección Postman, este README y `VALIDATION.md`. Los archivos privados y resultados generados quedan excluidos por `.gitignore`.
+Archivos entregados: Compose y configuración Camunda en `docker-compose.yml` y `camunda/`; BPMN en `bpmn/`; perfil en `projects/`; worker, puertos, adapters y cliente local en `src/main/java`; schemas en `src/main/resources`; pruebas, Gradle Wrapper, colección Postman, este README y `VALIDATION.md`. Los archivos privados y resultados generados quedan excluidos por `.gitignore`.
 
 - [Git clone](https://git-scm.com/docs/git-clone), [pull](https://git-scm.com/docs/git-pull), [fetch](https://git-scm.com/docs/git-fetch) y [push](https://git-scm.com/docs/git-push): contratos de transporte usados en esta implementación.
 

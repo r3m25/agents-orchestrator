@@ -8,7 +8,7 @@ Top thin gray band, separate from numbered processing:
 Caption: "Spring construye e inyecta las dependencias". Dashed dependency connector to the main worker and service; make clear bootstrap is not repeated per job.
 
 Main diagram:
-Small external clients card "local-process.py / Postman" with caption "Clientes de la API" → main Step 1 card "Camunda" with small text "Job: tech-lead.plan-impact.v1".
+Small external clients card "LocalProcessCommand / Postman" with caption "Clientes de la API" → main Step 1 card "Camunda" with small text "Job: tech-lead.plan-impact.v1".
 Step 1 → Step 2 "TechLeadJobWorker.plan()" with subtext "Recibe projectId, ticketKey y ticket".
 Step 2 → Step 3 "ImpactPlanningService.analyze()" with port badge "AnalyzeImpact".
 
@@ -43,4 +43,4 @@ Small note: "No se activa automáticamente desde el flujo de planificación".
 
 Bottom legend:
 "Badge = interfaz / puerto · Caja = clase concreta · Flecha = orden o llamada".
-Keep English identifiers exact and explanatory text Spanish. No invented classes, no REST controller or Python backend, no QA or autonomous development depicted as implemented. All nine numbered steps must appear once and be easy to follow. Prioritize technical accuracy and readability over visual ornament.
+Keep English identifiers exact and explanatory text Spanish. No invented classes, no additional backend, no QA or autonomous development depicted as implemented. All nine numbered steps must appear once and be easy to follow. Prioritize technical accuracy and readability over visual ornament.

@@ -1,34 +1,113 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.16'
+    id 'org.springframework.boot' version "${springBootVersion}"
+    id 'com.diffplug.spotless' version "${spotlessPluginVersion}"
+    id 'info.solidsoft.pitest' version "${pitestPluginVersion}"
 }
-group = 'dev.orchestrator'
+
+group = 'com.agents'
 version = '0.1.0'
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(javaVersion as int) } }
+
 repositories { mavenCentral() }
+
+configurations { mockitoAgent }
+
 dependencies {
-    implementation platform('org.springframework.boot:spring-boot-dependencies:3.5.16')
+    implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
     implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'io.camunda:camunda-spring-boot-3-starter:8.10.9'
-    implementation 'com.networknt:json-schema-validator:1.5.9'
+    implementation "io.camunda:camunda-spring-boot-4-starter:${camundaVersion}"
+    implementation "com.networknt:json-schema-validator:${jsonSchemaValidatorVersion}"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.camunda:zeebe-bpmn-model:8.10.9'
+    testImplementation "io.camunda:zeebe-bpmn-model:${camundaVersion}"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    mockitoAgent("org.mockito:mockito-core:${mockitoVersion}") { transitive = false }
 }
+
+sourceSets {
+    integrationTest {
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
 test { useJUnitPlatform() }
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter tasks.named('test')
+}
+tasks.withType(Test).configureEach {
+    jvmArgs "-javaagent:${configurations.mockitoAgent.singleFile}"
+}
+
+spotless {
+    java {
+        googleJavaFormat().aosp()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+        target 'src/*/java/**/*.java'
+    }
+    format 'misc', {
+        target '*.gradle', '*.md', '.gitignore', 'bpmn/**/*.bpmn', 'camunda/**/*.yaml', 'projects/**/*.json'
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+pitest {
+    pitestVersion = pitestEngineVersion
+    junit5PluginVersion = pitestJunit5PluginVersion
+    targetClasses = ['com.agents.orchestrator.*']
+    targetTests = ['com.agents.orchestrator.*']
+    testSourceSets = [sourceSets.test, sourceSets.integrationTest]
+    threads = 4
+    outputFormats = ['HTML', 'XML']
+    timestampedReports = false
+    mutationThreshold = pitestMutationThreshold as int
+    jvmArgs = ["-javaagent:${configurations.mockitoAgent.singleFile}"]
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('spotlessCheck')
+    dependsOn tasks.named('integrationTest')
+}
+
 processResources {
     from('bpmn') { into 'bpmn' }
 }
+
 tasks.register('validateImpact', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'dev.orchestrator.techlead.infrastructure.validation.ValidateImpactResult'
+    mainClass = 'com.agents.orchestrator.infrastructure.validation.ValidateImpactResult'
     args providers.gradleProperty('resultFile').getOrElse('.runtime/result.json')
 }
-springBoot { mainClass = 'dev.orchestrator.techlead.AgentsOrchestratorApplication' }
+
+springBoot { mainClass = 'com.agents.orchestrator.AgentsOrchestratorApplication' }
+
 tasks.register('prepareWorkBranch', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'dev.orchestrator.techlead.infrastructure.cli.PrepareWorkBranchCommand'
+    mainClass = 'com.agents.orchestrator.infrastructure.cli.PrepareWorkBranchCommand'
     args providers.gradleProperty('projectId').getOrElse(''),
          providers.gradleProperty('component').getOrElse(''),
          providers.gradleProperty('branchName').getOrElse('')
+}
+
+tasks.register('localProcess', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.agents.orchestrator.infrastructure.cli.LocalProcessCommand'
+    if (project.hasProperty('commandArgs')) {
+        args project.property('commandArgs').trim().split(/\s+/)
+    }
 }

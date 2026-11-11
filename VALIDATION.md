@@ -7,7 +7,7 @@
 - Docker: `orchestration` con `camunda/camunda:8.10.9` y `connectors` con `camunda/connectors-bundle:8.10.5`, ambos saludables.
 - Topología real: gateway/broker **8.10.9**, una partición activa y saludable.
 - Codex CLI instalada: **0.167.0-alpha.3.2**. Se comprobaron sus opciones de sandbox, esquema de salida, modo efímero y ejecución sin configuración de usuario.
-- Se verificó la compatibilidad publicada del starter Camunda 8.10 con Java 21 y Spring Boot 3.5, y se resolvió el artefacto `camunda-spring-boot-3-starter:8.10.9`.
+- Se verificó la compatibilidad publicada del starter Camunda 8.10 con Java 21 y Spring Boot 4.1, y se resolvió el artefacto `camunda-spring-boot-4-starter:8.10.9`.
 
 ## Automatización
 
@@ -106,29 +106,25 @@ El repositorio tenía cambios previos del usuario, incluidos cambios de ese BPMN
 
 ## Actualización: decisiones en la respuesta de inicio
 
-Se ajustaron el helper y la colección para que `POST /v2/process-instances` use `awaitCompletion: true`, `requestTimeout: 600000` y `fetchVariables: ["impactAnalysis"]`. El inicio devuelve ahora las decisiones del ticket dentro de `variables.impactAnalysis` en la misma respuesta, además de la clave de instancia. El modo anterior sigue disponible con `start --async`.
+Se ajustaron el cliente Java y la colección para que `POST /v2/process-instances` use `awaitCompletion: true`, `requestTimeout: 600000` y `fetchVariables: ["impactAnalysis"]`. El inicio devuelve ahora las decisiones del ticket dentro de `variables.impactAnalysis` en la misma respuesta, además de la clave de instancia. El modo anterior sigue disponible con `start --async`.
 
 La comprobación real del nuevo contrato creó la instancia `2251799813768889`, runId `2251799813768905`, para KIVNES-34. Jira, Git y Codex se ejecutaron realmente; la respuesta HTTP incluyó el análisis completo con estado `BLOCKED`, decisiones, cinco tareas, agentes, dependencias y siguiente acción `REQUEST_INFORMATION`. La ejecución del worker duró aproximadamente 42 segundos. Se comprobó que las decisiones y demás colecciones estuvieran presentes y que `readOnly` fuera true. Evidencia: `.runtime/synchronous-response.json`.
 
 El resultado propone aclarar reglas pendientes e inspeccionar el backend y consumidores; después, condicionado a desbloqueo y aprobación humana, plantea backend, web y QA. No se ejecutó desarrollo ni se presentaron esas propuestas como trabajo realizado.
 
-**Cuatro pruebas adicionales del cliente Python aprobadas**, con transporte HTTP simulado explícitamente: respuesta síncrona con decisiones, modo asíncrono, finalización sin análisis y HTTP 504 sin iniciar otra instancia. Se ejecutan con:
+El cliente local fue migrado posteriormente a Java. Sus pruebas cubren respuesta síncrona con decisiones, modo asíncrono, finalización sin análisis, validación de argumentos, inspección y despliegue; se ejecutan con `./gradlew test`.
 
-```sh
-python3 -m unittest discover -s scripts -p 'test_*.py'
-```
+La colección contiene aserciones equivalentes sobre `impactAnalysis`. Se intentó ejecutarla localmente con Postman y exportar su informe, pero la CLI exigió autenticación para `--output` antes de enviar peticiones. La validación viva se completó mediante el cliente contra el mismo endpoint; no se atribuye esa ejecución a Postman.
 
-La colección contiene aserciones equivalentes sobre `impactAnalysis`. Se intentó ejecutarla localmente con Postman y exportar su informe, pero la CLI exigió autenticación para `--output` antes de enviar peticiones. La validación viva se completó mediante el helper contra el mismo endpoint; no se atribuye esa ejecución a Postman.
-
-Un timeout HTTP no cancela la instancia Camunda; no reintentar automáticamente el POST. El helper informa este caso como error y recomienda revisar Operate para evitar instancias duplicadas. Los workers temporales se detuvieron tras comprobar la respuesta.
+Un timeout HTTP no cancela la instancia Camunda; no reintentar automáticamente el POST. El cliente Java informa este caso como error y recomienda revisar Operate para evitar instancias duplicadas. Los workers temporales se detuvieron tras comprobar la respuesta.
 
 ## Corrección: worker independiente del proyecto
 
-Se sustituyeron el grupo Gradle `cl.kivnes` y los paquetes `cl.kivnes.orchestrator` por `dev.orchestrator` y `dev.orchestrator.techlead`. El JAR reconstruido tiene `Start-Class: dev.orchestrator.techlead.AgentsOrchestratorApplication` y no contiene clases del paquete anterior.
+Se sustituyeron el grupo Gradle `cl.kivnes` y los paquetes `cl.kivnes.orchestrator` por `dev.orchestrator` y `com.agents.orchestrator`. El JAR reconstruido tiene `Start-Class: com.agents.orchestrator.AgentsOrchestratorApplication` y no contiene clases del paquete anterior.
 
-El prompt ya no identifica al agente como KIVNES: el contexto incluye el `projectId` recibido del perfil seleccionado. El helper exige `--project` al iniciar y la colección exige configurar `project_id` y `ticket_key`, sin valores predeterminados de un proyecto. Se separaron la plantilla genérica `repository-paths.example.json` y el ejemplo explícito `repository-paths.kivnes.example.json`; se añadió el perfil de plantilla `examples/projects/example-project.json`.
+El prompt ya no identifica al agente como KIVNES: el contexto incluye el `projectId` recibido del perfil seleccionado. El cliente Java exige `--project` al iniciar y la colección exige configurar `project_id` y `ticket_key`, sin valores predeterminados de un proyecto. Se separaron la plantilla genérica `repository-paths.example.json` y el ejemplo explícito `repository-paths.kivnes.example.json`; se añadió el perfil de plantilla `examples/projects/example-project.json`.
 
-Verificación posterior a la corrección: **31 pruebas Java y 6 pruebas Python aprobadas**, build limpio y JAR ejecutable generado. Las pruebas de carga Git y contexto Codex cubren perfiles `sample-project` y `parking-app`, con sus propios patrones de ticket; son fixtures de prueba, no nuevas integraciones externas verificadas. También se comprobó el arranque real del JAR con los workers desactivados para no ejecutar trabajos ni consumir Codex. Se validó offline un resultado histórico contra el schema de salida, que permanece compatible.
+Verificación posterior a la corrección: build limpio y JAR ejecutable generado. Las pruebas de carga Git y contexto Codex cubren perfiles `sample-project` y `parking-app`, con sus propios patrones de ticket; son fixtures de prueba, no nuevas integraciones externas verificadas. También se comprobó el arranque real del JAR con los workers desactivados para no ejecutar trabajos ni consumir Codex. Se validó offline un resultado histórico contra el schema de salida, que permanece compatible.
 
 El proceso BPMN, sus identificadores y el contrato HTTP se mantienen. KIVNES permanece como un proyecto configurado y como evidencia histórica de las ejecuciones anteriores. No se modificaron su perfil externo, sus repositorios ni el BPMN original.
 
@@ -140,7 +136,7 @@ La planificación prepara un clone administrado, obtiene las referencias del rem
 
 También se implementó el caso de uso `PrepareWorkBranch`, accesible con la tarea Gradle `prepareWorkBranch`: crea una rama remota solo si falta, la reutiliza si existe y prepara su checkout local sincronizado. La publicación es de creación exclusiva mediante lease vacío, por lo que no sobrescribe una rama existente. Esta operación no está conectada automáticamente al BPMN de planificación; el desarrollo delegado y su aprobación continúan pendientes.
 
-Validación final: **56 pruebas Java y 6 Python aprobadas**; `bootJar` generado y `validateImpact` confirma compatibilidad del contrato de salida con el resultado histórico. Las pruebas nuevas usan **Git real con remotos bare temporales**, sin credenciales ni escrituras en proveedores externos. Cubren:
+Validación histórica antes de la migración final a Java: `bootJar` generado y `validateImpact` confirma compatibilidad del contrato de salida con el resultado histórico. Las pruebas nuevas usan **Git real con remotos bare temporales**, sin credenciales ni escrituras en proveedores externos. Cubren:
 
 - Clone y checkout de la rama base.
 - Pull de un commit añadido al remoto después del primer análisis.
