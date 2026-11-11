@@ -1,5 +1,6 @@
 .runtime/
 build/
+.gradle/
 camunda/worker.env
 camunda/codex/
 .idea/
